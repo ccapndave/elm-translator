@@ -4,6 +4,7 @@ module Translator exposing
   , updateTranslations
   , getTranslations
   , decoderFromTranslationsWithDefault
+  , decoderToUpdateTranslations
   , trans
   , text
   , placeholder
@@ -24,7 +25,7 @@ other cases on the right.  The number can be substituted using `{count}`.
 See the `example/` directory for an example of the package being used.
 
 ## Building Translators
-@docs Translator, makeDefaultTranslator, updateTranslations, getTranslations, decoderFromTranslationsWithDefault
+@docs Translator, makeDefaultTranslator, updateTranslations, getTranslations, decoderFromTranslationsWithDefault, decoderToUpdateTranslations
 
 ## Using Translators
 @docs trans, text, placeholder
@@ -62,6 +63,24 @@ decoderFromTranslationsWithDefault : Translations -> Decoder Translator
 decoderFromTranslationsWithDefault defaultTranslations =
   JD.map2 Translator
     (JD.succeed defaultTranslations)
+    (JD.nullable Translations.decoder)
+
+
+{-| This creates a Json Decoder that will decode Json of the form:
+
+    {
+        "Yes": "Oui",
+        "No": "Non"
+    }
+
+into a valid Translator that can be used with the translation functions in this package.  You
+need to provide a Translator parameter which contains an existing translator; the default translations
+will be kept from this Translator.
+-}
+decoderToUpdateTranslations : Translator -> Decoder Translator
+decoderToUpdateTranslations translator =
+  JD.map2 Translator
+    (JD.succeed translator.defaultTranslations)
     (JD.nullable Translations.decoder)
 
 
