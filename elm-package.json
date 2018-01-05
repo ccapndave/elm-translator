@@ -1,5 +1,5 @@
 {
-    "version": "1.1.0",
+    "version": "1.2.0",
     "summary": "Type-safe internationalisation for Elm",
     "repository": "https://github.com/ccapndave/elm-translator.git",
     "license": "BSD3",
