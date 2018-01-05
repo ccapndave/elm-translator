@@ -6,6 +6,7 @@ module Translator exposing
   , decoderFromTranslationsWithDefault
   , decoderToUpdateTranslations
   , trans
+  , transString
   , text
   , placeholder
   )
@@ -28,7 +29,7 @@ See the `example/` directory for an example of the package being used.
 @docs Translator, makeDefaultTranslator, updateTranslations, getTranslations, decoderFromTranslationsWithDefault, decoderToUpdateTranslations
 
 ## Using Translators
-@docs trans, text, placeholder
+@docs trans, transString, text, placeholder
 -}
 
 import Json.Decode as JD exposing (Decoder, field)
@@ -169,6 +170,36 @@ trans literal translator =
   chosenTranslation
     |> substitute chosenSubstitutions
     |> pluralize (Result.toMaybe intParameter)
+
+
+{-| This is identical to trans, except that it takes the name of the literal as a String
+instead of the Literal itself.  This is useful when the literal's name is loaded dynamically.
+Because we don't have access to the type constructor this doesn't support substitutions.
+-}
+transString : String -> Translator -> String
+transString literalString translator =
+  let
+    -- Get the translator from translations (if we can)
+    translation : Maybe String
+    translation =
+      translator.translations
+        |> Maybe.andThen (Dict.get literalString)
+
+    -- Get the fallback translation from defaultTranslations (if we can)
+    defaultTranslation : Maybe String
+    defaultTranslation =
+      translator.defaultTranslations
+        |> Dict.get literalString
+  in
+  case (translation, defaultTranslation) of
+    (Just t, _) ->
+      t
+
+    (Nothing, Just t) ->
+      t
+
+    (Nothing, Nothing) ->
+      "..."
 
 
 {-| Apply any substitutions by replacing any `{key}`s in the translated string with their `value`s

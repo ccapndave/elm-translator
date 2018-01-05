@@ -14,6 +14,7 @@ all =
     , noMatchTest
     , substitutionTest
     , pluralizationTest
+    , transStringTest
     ]
 
 
@@ -85,3 +86,15 @@ pluralizationTest =
         \() ->
           Expect.equal (trans (ThereAreNPeople 5) translator) "Il y a 5 personnes"
     ]
+
+
+transStringTest : Test
+transStringTest =
+  let
+    translator =
+      makeDefaultTranslator Dict.empty
+        |> updateTranslations (Dict.fromList [ "Yes" => "Oui" ])
+  in
+  test "should work for normal translations" <|
+    \() ->
+      Expect.equal (transString "Yes" translator) "Oui"
