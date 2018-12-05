@@ -1,0 +1,21 @@
+module Literals exposing (..)
+
+import Dict exposing (Dict)
+import Translator exposing (Literal, makeLiteral, makeLiteralWithOptions)
+
+<% Object.entries(spec).forEach(([ key, value ]) => {%>
+<%   const hasDefault = !!value.default; %>
+<%   const hasSubstitutions = !!value.substitutions; %>
+<%   const isPluralised = !!value.pluralise; %>
+<%- lowerCaseFirstLetter(key) %>: <%- isPluralised ? "Int ->" : "" %> <%- hasSubstitutions ? `{ ${value.substitutions.map(substitution => substitution + ":String").join(",")} } ->` : "" %> Literal
+<%- lowerCaseFirstLetter(key) %> <%- isPluralised ? "count" : "" %> <%- hasSubstitutions ? `{ ${value.substitutions.map(substitution => substitution).join(",")} }` : "" %> =
+<% if (!hasDefault && !hasSubstitutions && !isPluralised) { %>
+  makeLiteral "<%- key %>"
+<% } else { %>
+  makeLiteralWithOptions
+    "<%- key %>"
+    <%- hasDefault ? `(Just "${value.default}")` : "Nothing" %>
+    <%- hasSubstitutions ? `(Dict.fromList [${value.substitutions.map(substitution => `("${substitution}", ${substitution})`).join(",")}])` : "Dict.empty" %>
+    <%- isPluralised ? `(Just count)` : "Nothing" %>
+<% } %>
+<% }); %>

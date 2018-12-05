@@ -1,0 +1,16 @@
+{
+  "name": "elm-translator",
+  "version": "2.0.0",
+  "description": "Type safe translations for Elm.  The npm package contains a binary to autogenerate Elm code from a json specification.",
+  "bin": {
+    "elm-translator": "bin/cli.js"
+  },
+  "repository": "git@github.com:ccapndave/elm-translator.git",
+  "author": "Dave Keen <dave@keendevelopment.ch>",
+  "license": "BSD",
+  "dependencies": {
+    "ejs": "^2.6.1",
+    "elm-format": "^0.8.1",
+    "yargs": "^12.0.5"
+  }
+}
