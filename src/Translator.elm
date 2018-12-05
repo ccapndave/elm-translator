@@ -1,257 +1,181 @@
 module Translator exposing
-  ( Translator
-  , makeDefaultTranslator
-  , updateTranslations
-  , getTranslations
-  , decoderFromTranslationsWithDefault
-  , decoderToUpdateTranslations
-  , trans
-  , transString
-  , text
-  , placeholder
-  )
+    ( Literal
+    , makeLiteral, makeLiteralWithOptions
+    , defaultTranslator, addTranslations, updateTranslations
+    , trans, text, placeholder
+    )
 
-{-| A package to provide type safe internationalisation, where translations can be loaded at
-runtime.  Default translations, substitutions and pluralization are supported.
+{-| This is package to provide type safe internationalisation, where translations can be loaded at
+runtime. Default translations, substitutions and pluralization are supported.
 
 Substitutions are implemented by surrounding the literal in braces:
 
-    "MyNameIs": "Je m'appelle {name}"
+    {
+      "MyNameIs": "Je m'appelle {name}"
+    }
 
 Pluralization is implemented by having the singular case on the left of the pipe symbol, and all
-other cases on the right.  The number can be substituted using `{count}`.
+other cases on the right. The number can be substituted using `{count}`.
 
-    "MyAge": "I am only one year old|I'm {count} years old"
+    {
+      "MyAge": "I am only one year old|I'm {count} years old"
+    }
 
-See the `example/` directory for an example of the package being used.
+@docs Literal
+@docs makeLiteral, makeLiteralWithOptions
+@docs defaultTranslator, addTranslations, updateTranslations
+@docs trans, text, placeholder
 
-## Building Translators
-@docs Translator, makeDefaultTranslator, updateTranslations, getTranslations, decoderFromTranslationsWithDefault, decoderToUpdateTranslations
-
-## Using Translators
-@docs trans, transString, text, placeholder
 -}
 
-import Json.Decode as JD exposing (Decoder, field)
-import Basics.Extra exposing ((=>))
 import Dict exposing (Dict)
-import Regex exposing (regex)
-import Reflect exposing (typeToName, typeParameterRecordToDict, typeParameterToInt)
-import Html exposing (Html, Attribute)
+import Html exposing (Attribute, Html)
 import Html.Attributes
+import Regex
 import Translations exposing (Translations)
 
-{-| A Translator contains all the required information to translate strings into other languages.
+
+{-| This represents a literal that can be translated.
 -}
-type alias Translator =
-  { defaultTranslations : Translations
-  , translations : Maybe Translations
-  }
+type Literal
+    = Literal LiteralData
 
 
-{-| This creates a Json Decoder that will decode Json of the form:
-
-    {
-        "Yes": "Oui",
-        "No": "Non"
+type alias LiteralData =
+    { id : String
+    , default : Maybe String
+    , substitutions : Dict String String
+    , count : Maybe Int
     }
 
-into a valid Translator that can be used with the translation functions in this package.  You
-need to provide a Translations parameter which contains the default translations, in case a
-translation can't be matched.
+
+type Translator
+    = Translator (List Translations)
+
+
+{-| An empty translator. The only translations this will be able to do are the defaults
+specified in the literals (hence why it is called `defaultTranslator`).
 -}
-decoderFromTranslationsWithDefault : Translations -> Decoder Translator
-decoderFromTranslationsWithDefault defaultTranslations =
-  JD.map2 Translator
-    (JD.succeed defaultTranslations)
-    (JD.nullable Translations.decoder)
+defaultTranslator : Translator
+defaultTranslator =
+    Translator []
 
 
-{-| This creates a Json Decoder that will decode Json of the form:
-
-    {
-        "Yes": "Oui",
-        "No": "Non"
-    }
-
-into a valid Translator that can be used with the translation functions in this package.  You
-need to provide a Translator parameter which contains an existing translator; the default translations
-will be kept from this Translator.
+{-| Add a translation dictionary to a translator.
 -}
-decoderToUpdateTranslations : Translator -> Decoder Translator
-decoderToUpdateTranslations translator =
-  JD.map2 Translator
-    (JD.succeed translator.defaultTranslations)
-    (JD.nullable Translations.decoder)
+addTranslations : Translations -> Translator -> Translator
+addTranslations translations (Translator translationDicts) =
+    Translator (translations :: translationDicts)
 
 
-{-| This creates a Translator with the given default Translations, but no loaded Translations.
-Typically this would be used when initializing your program's Model to make sure there are some
-translations on startup.
--}
-makeDefaultTranslator : Translations -> Translator
-makeDefaultTranslator defaultTranslations =
-  Translator defaultTranslations Nothing
-
-
-{-| Update an existing Translator with the given loaded Translations.  Typically this would be
-used to update an existing Translator when you have loaded some Translations at runtime.
+{-| Update the translation dictionary at the head of the stack. If there are none
+then set this as the only translation dictionary.
 -}
 updateTranslations : Translations -> Translator -> Translator
-updateTranslations translations translator =
-  { translator
-  | translations = Just translations
-  }
+updateTranslations translations (Translator translationDicts) =
+    case translationDicts of
+        [] ->
+            Translator [ translations ]
+
+        firstTranslations :: xs ->
+            Translator (translations :: xs)
 
 
-{-| Get the translations out of the Translator (if there are any).
+{-| Given the id of the literal in the translations, make a Literal that can be used
+for doing a translation.
 -}
-getTranslations : Translator -> Maybe Translations
-getTranslations =
-  .translations
+makeLiteral : String -> Literal
+makeLiteral id =
+    makeLiteralWithOptions id Nothing Dict.empty Nothing
 
 
-{-| Given an id and a Translator, translate to a String.  This can never fail, and in the event
+{-| Given the id of the literal in the translations, make a Literal that can be used
+for doing a translation. This also allows you to specify a default translation, substitutions
+and a count for pluralisation.
+-}
+makeLiteralWithOptions : String -> Maybe String -> Dict String String -> Maybe Int -> Literal
+makeLiteralWithOptions id default substitutions count =
+    Literal (LiteralData id default substitutions count)
+
+
+findTranslation : Literal -> Translator -> String
+findTranslation ((Literal { id, default }) as literal) (Translator translations) =
+    case translations of
+        [] ->
+            default |> Maybe.withDefault "..."
+
+        firstTranslationDict :: xs ->
+            case Dict.get id firstTranslationDict of
+                Just translation ->
+                    translation
+
+                Nothing ->
+                    findTranslation literal (Translator xs)
+
+
+{-| Given a Literal, translate to a String. This can never fail, and in the event
 of being unable to match in either the loaded or default literals this will fall back to "...".
 This supports substitutions and pluralization.
-
-Substitutions and pluralization are supported (see the top-level package doumentation).
 -}
-trans : literal -> Translator -> String
-trans literal translator =
-  let
-    -- Choose a translation, or default to "..." if we don't have one
-    chosenTranslation: String
-    chosenTranslation =
-      let
-        -- Get the translator from translations (if we can)
-        translation : Maybe String
-        translation =
-          translator.translations
-            |> Maybe.andThen (Dict.get <| typeToName literal)
-
-        -- Get the fallback translation from defaultTranslations (if we can)
-        defaultTranslation : Maybe String
-        defaultTranslation =
-          translator.defaultTranslations
-            |> Dict.get (typeToName literal)
-      in
-      case (translation, defaultTranslation) of
-        (Just t, _) ->
-          t
-
-        (Nothing, Just t) ->
-          t
-
-        (Nothing, Nothing) ->
-          "..."
-
-    -- Choose the substitutions by using reflection
-    stringRecordParameter : Result String (Dict String String)
-    stringRecordParameter =
-      typeParameterRecordToDict JD.string literal
-
-    intParameter : Result String Int
-    intParameter =
-      typeParameterToInt literal
-
-    chosenSubstitutions : Dict String String
-    chosenSubstitutions =
-      case (stringRecordParameter, intParameter) of
-        (Ok dict, _) ->
-          dict
-
-        (Err _, Ok count) ->
-          Dict.fromList [ "count" => toString count ]
-
-        otherwise ->
-          Dict.empty
-  in
-  chosenTranslation
-    |> substitute chosenSubstitutions
-    |> pluralize (Result.toMaybe intParameter)
+trans : Literal -> Translator -> String
+trans ((Literal { id, default, substitutions, count }) as literal) translator =
+    findTranslation literal translator
+        |> substitute substitutions
+        |> pluralize count
 
 
-{-| This is identical to trans, except that it takes the name of the literal as a String
-instead of the Literal itself.  This is useful when the literal's name is loaded dynamically.
-Because we don't have access to the type constructor this doesn't support substitutions.
+{-| A translated version of Html.text for use directly in an Elm view
 -}
-transString : String -> Translator -> String
-transString literalString translator =
-  let
-    -- Get the translator from translations (if we can)
-    translation : Maybe String
-    translation =
-      translator.translations
-        |> Maybe.andThen (Dict.get literalString)
+text : Translator -> Literal -> Html msg
+text translator literal =
+    translator
+        |> trans literal
+        |> Html.text
 
-    -- Get the fallback translation from defaultTranslations (if we can)
-    defaultTranslation : Maybe String
-    defaultTranslation =
-      translator.defaultTranslations
-        |> Dict.get literalString
-  in
-  case (translation, defaultTranslation) of
-    (Just t, _) ->
-      t
 
-    (Nothing, Just t) ->
-      t
-
-    (Nothing, Nothing) ->
-      "..."
+{-| A translated version of Html.Attributes.placeholder for use directly in an Elm view
+-}
+placeholder : Translator -> Literal -> Attribute msg
+placeholder translator literal =
+    translator
+        |> trans literal
+        |> Html.Attributes.placeholder
 
 
 {-| Apply any substitutions by replacing any `{key}`s in the translated string with their `value`s
 -}
 substitute : Dict String String -> String -> String
 substitute substitutions translation =
-  let
-    substituteItem : String -> String -> String -> String
-    substituteItem key value str =
-      Regex.replace Regex.All (regex <| "{" ++ key ++ "}") (always value) str
-  in
-  substitutions
-    |> Dict.foldl substituteItem translation
+    let
+        substituteItem : String -> String -> String -> String
+        substituteItem key value str =
+            Regex.fromString ("{\\s*" ++ key ++ "\\s*}")
+                |> Maybe.map (\regex -> Regex.replace regex (\_ -> value) str)
+                |> Maybe.withDefault str
+    in
+    substitutions
+        |> Dict.foldl substituteItem translation
 
 
 {-| Deal with pluralization based on the given count
 -}
 pluralize : Maybe Int -> String -> String
 pluralize count translation =
-  let
-    (singularClause, pluralClause) =
-      case (String.split "|" translation) of
-        [ singularClause, pluralClause ] ->
-          (singularClause, pluralClause)
+    let
+        ( singularClause, pluralClause ) =
+            case String.split "|" translation of
+                [ s, p ] ->
+                    ( s, p )
 
-        otherwise ->
-          ("", "")
-  in
-  case count of
-    Just 1 ->
-      singularClause
+                otherwise ->
+                    ( "", "" )
+    in
+    case count of
+        Just 1 ->
+            singularClause |> substitute (Dict.fromList [ ( "count", "1" ) ])
 
-    Just _ ->
-      pluralClause
+        Just n ->
+            pluralClause |> substitute (Dict.fromList [ ( "count", String.fromInt n ) ])
 
-    Nothing ->
-      translation
-
-
-{-| A translated version of Html.text for use directly in an Elm view
--}
-text : Translator -> literal -> Html msg
-text translator literal =
-  translator
-    |> trans literal
-    |> Html.text
-
-
-{-| A translated version of Html.Attributes.placeholder for use directly in an Elm view
--}
-placeholder : Translator -> literal -> Attribute msg
-placeholder translator literal =
-  translator
-    |> trans literal
-    |> Html.Attributes.placeholder
+        Nothing ->
+            translation

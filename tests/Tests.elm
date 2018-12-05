@@ -1,100 +1,85 @@
-module Tests exposing (..)
+module Tests exposing (all)
 
-import Test exposing (..)
-import Expect
 import Dict
-import Basics.Extra exposing ((=>))
+import Expect
+import Literals
+import Test exposing (..)
 import Translator exposing (..)
+
 
 all : Test
 all =
-  describe "Translations"
-    [ translationsTest
-    , defaultTranslationsTest
-    , noMatchTest
-    , substitutionTest
-    , pluralizationTest
-    , transStringTest
-    ]
-
-
-type Literal
-  = Yes
-  | No
-  | MyNameIs { name : String }
-  | ThereAreNPeople Int
+    describe "Translations"
+        [ translationsTest
+        , defaultTranslationsTest
+        , noMatchTest
+        , substitutionTest
+        , pluralizationTest
+        ]
 
 
 translationsTest : Test
 translationsTest =
-  let
-    translator =
-      makeDefaultTranslator Dict.empty
-        |> updateTranslations (Dict.fromList [ "Yes" => "Oui" ])
-  in
-  test "should work for normal translations" <|
-    \() ->
-      Expect.equal (trans Yes translator) "Oui"
+    let
+        translator =
+            defaultTranslator
+                |> updateTranslations (Dict.fromList [ ( "Yes", "Oui" ) ])
+    in
+    test "should work for normal translations" <|
+        \() ->
+            Expect.equal (trans Literals.yes translator) "Oui"
 
 
 defaultTranslationsTest : Test
 defaultTranslationsTest =
-  let
-    translator =
-      makeDefaultTranslator (Dict.fromList [ "Yes" => "Oui" ])
-  in
-  test "should work with the fallback (default) translations" <|
-    \() ->
-      Expect.equal (trans Yes translator) "Oui"
+    test "should work with the fallback (default) translations" <|
+        \() ->
+            Expect.equal (trans Literals.no defaultTranslator) "Non"
 
 
 noMatchTest : Test
 noMatchTest =
-  let
-    translator =
-      makeDefaultTranslator Dict.empty
-  in
-  test "should return ... if there is no match" <|
-    \() ->
-      Expect.equal (trans Yes translator) "..."
+    test "should return ... if there is no match" <|
+        \() ->
+            Expect.equal (trans Literals.yes defaultTranslator) "..."
 
 
 substitutionTest : Test
 substitutionTest =
-  let
-    translator =
-      makeDefaultTranslator Dict.empty
-        |> updateTranslations (Dict.fromList [ "MyNameIs" => "Je m'appelle {name}" ])
-  in
-  test "should substitute values" <|
-    \() ->
-      Expect.equal (trans (MyNameIs { name = "Dave" }) translator) "Je m'appelle Dave"
+    let
+        translator =
+            defaultTranslator
+                |> updateTranslations (Dict.fromList [ ( "MyNameIs", "Je m'appelle {name}" ) ])
+    in
+    test "should substitute values" <|
+        \() ->
+            Expect.equal (trans (Literals.myNameIs { name = "Dave" }) translator) "Je m'appelle Dave"
 
 
 pluralizationTest : Test
 pluralizationTest =
-  let
-    translator =
-      makeDefaultTranslator Dict.empty
-        |> updateTranslations (Dict.fromList [ "ThereAreNPeople" => "Il y a {count} personne|Il y a {count} personnes" ])
-  in
-  describe "should pluralize"
-    [ test "the single case" <|
-        \() ->
-          Expect.equal (trans (ThereAreNPeople 1) translator) "Il y a 1 personne"
-    , test "the other case" <|
-        \() ->
-          Expect.equal (trans (ThereAreNPeople 5) translator) "Il y a 5 personnes"
-    ]
+    let
+        translator =
+            defaultTranslator
+                |> updateTranslations (Dict.fromList [ ( "ThereAreNPeople", "Il y a {count} personne|Il y a {count} personnes" ) ])
+    in
+    describe "should pluralize"
+        [ test "the single case" <|
+            \() ->
+                Expect.equal (trans (Literals.thereAreNPeople 1) translator) "Il y a 1 personne"
+        , test "the multiple case" <|
+            \() ->
+                Expect.equal (trans (Literals.thereAreNPeople 5) translator) "Il y a 5 personnes"
+        ]
 
 
-transStringTest : Test
-transStringTest =
-  let
-    translator =
-      makeDefaultTranslator Dict.empty
-        |> updateTranslations (Dict.fromList [ "Yes" => "Oui" ])
-  in
-  test "should work for normal translations" <|
-    \() ->
-      Expect.equal (transString "Yes" translator) "Oui"
+everythingTest : Test
+everythingTest =
+    describe "should default, substitute and pluralise"
+        [ test "the single case" <|
+            \() ->
+                Expect.equal (trans (Literals.everything 1 { firstName = "Dave" }) defaultTranslator) "Dave is 1"
+        , test "the multiple case" <|
+            \() ->
+                Expect.equal (trans (Literals.everything 5 { firstName = "Dave" }) defaultTranslator) "Dave is 5 years old"
+        ]

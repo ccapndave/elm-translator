@@ -19,5 +19,3 @@ other cases on the right.  The number can be substituted using `{count}`.
   "MyAge": "I am only one year old|I'm {count} years old"
 }
 ```
-
-See the `example/` directory for an example of the package being used.
