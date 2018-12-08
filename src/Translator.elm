@@ -1,5 +1,5 @@
 module Translator exposing
-    ( Literal
+    ( Literal, Translator
     , makeLiteral, makeLiteralWithOptions
     , defaultTranslator, addTranslations, updateTranslations
     , trans, text, placeholder
@@ -21,7 +21,7 @@ other cases on the right. The number can be substituted using `{count}`.
       "MyAge": "I am only one year old|I'm {count} years old"
     }
 
-@docs Literal
+@docs Literal, Translator
 @docs makeLiteral, makeLiteralWithOptions
 @docs defaultTranslator, addTranslations, updateTranslations
 @docs trans, text, placeholder
@@ -49,6 +49,8 @@ type alias LiteralData =
     }
 
 
+{-| The translator contains the translation stack. This probably belongs in the model.
+-}
 type Translator
     = Translator (List Translations)
 

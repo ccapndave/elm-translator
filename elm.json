@@ -3,7 +3,7 @@
     "name": "ccapndave/elm-translator",
     "summary": "Type-safe internationalisation for Elm",
     "license": "BSD-3-Clause",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "exposed-modules": [
         "Translations",
         "Translator"
