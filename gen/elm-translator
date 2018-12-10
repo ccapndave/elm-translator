@@ -33,23 +33,23 @@ const argv = yargs
       .option("f", {
         describe: "The specification file to use"
       })
-      .demandOption([ "f" ])
+      .demandOption(["f"])
       .option("modulename", {
         default: "Literals",
         describe: "The name of the Elm module that will be generated"
       })
-    }, ({ f, modulename }) => {
-      if (!fs.existsSync(f)) {
-        console.error(`The specification file ${f} doesn't exist.`);
-      } else {
-        const jsonStr = fs.readFileSync(f, "utf8");
-        const json = JSON.parse(jsonStr);
-        const result = generate(json);
+  }, ({ f, modulename }) => {
+    if (!fs.existsSync(f)) {
+      console.error(`The specification file ${f} doesn't exist.`);
+    } else {
+      const jsonStr = fs.readFileSync(f, "utf8");
+      const json = JSON.parse(jsonStr);
+      const result = generate(json);
 
-        if (result) {
-          console.log(result);
-        }
+      if (result) {
+        console.log(result);
       }
     }
+  }
   )
   .argv;
