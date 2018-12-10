@@ -5,6 +5,7 @@
   "bin": {
     "elm-translator": "bin/elm-translator"
   },
+  "main": "index.js",
   "repository": "git@github.com:ccapndave/elm-translator.git",
   "author": "Dave Keen <dave@keendevelopment.ch>",
   "license": "BSD",
