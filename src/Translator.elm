@@ -1,6 +1,6 @@
 module Translator exposing
-    ( Literal, Translator
-    , makeLiteral, makeLiteralWithOptions
+    ( Translator, decoder, encode
+    , Literal, makeLiteral, makeLiteralWithOptions
     , defaultTranslator, addTranslations, updateTranslations
     , trans, text, placeholder
     )
@@ -21,8 +21,8 @@ other cases on the right. The number can be substituted using `{count}`.
       "MyAge": "I am only one year old|I'm {count} years old"
     }
 
-@docs Literal, Translator
-@docs makeLiteral, makeLiteralWithOptions
+@docs Translator, decoder, encode
+@docs Literal, makeLiteral, makeLiteralWithOptions
 @docs defaultTranslator, addTranslations, updateTranslations
 @docs trans, text, placeholder
 
@@ -31,6 +31,8 @@ other cases on the right. The number can be substituted using `{count}`.
 import Dict exposing (Dict)
 import Html exposing (Attribute, Html)
 import Html.Attributes
+import Json.Decode as JD exposing (Decoder, field)
+import Json.Encode as JE exposing (Value)
 import Regex
 import Translations exposing (Translations)
 
@@ -53,6 +55,22 @@ type alias LiteralData =
 -}
 type Translator
     = Translator (List Translations)
+
+
+{-| A Json decoder for a translator
+-}
+decoder : Decoder Translator
+decoder =
+    JD.list Translations.decoder
+        |> JD.map Translator
+
+
+{-| A Json encoder for a translator
+-}
+encode : Translator -> Value
+encode (Translator translations) =
+    translations
+        |> JE.list Translations.encode
 
 
 {-| An empty translator. The only translations this will be able to do are the defaults
