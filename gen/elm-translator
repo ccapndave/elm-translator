@@ -6,13 +6,13 @@ const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
 
-function generate(spec) {
+function generate(spec, { modulename }) {
   const templatePath = path.resolve(__dirname, "templates", "Literals.elm.ejs");
 
   const lowerCaseFirstLetter = str => str.substr(0, 1).toLowerCase() + str.substr(1);
 
   const source = fs.readFileSync(templatePath, "utf8");
-  const rendered = ejs.render(source, { spec, lowerCaseFirstLetter });
+  const rendered = ejs.render(source, { spec, modulename: modulename || "Literals", lowerCaseFirstLetter });
 
   try {
     const formatted = execSync(path.resolve(__dirname, "..", "node_modules", ".bin", "elm-format --stdin"), { input: rendered }).toString();
@@ -44,7 +44,7 @@ const argv = yargs
     } else {
       const jsonStr = fs.readFileSync(f, "utf8");
       const json = JSON.parse(jsonStr);
-      const result = generate(json);
+      const result = generate(json, { modulename });
 
       if (result) {
         console.log(result);

@@ -1,4 +1,4 @@
-module Literals exposing (..)
+module <%- modulename %> exposing (..)
 
 import Dict exposing (Dict)
 import Translator exposing (Literal, makeLiteral, makeLiteralWithOptions)
@@ -8,14 +8,14 @@ import Translator exposing (Literal, makeLiteral, makeLiteralWithOptions)
 <%   const hasSubstitutions = !!value.substitutions; %>
 <%   const isPluralised = !!value.pluralise; %>
 <%- lowerCaseFirstLetter(key) %>: <%- isPluralised ? "Int ->" : "" %> <%- hasSubstitutions ? `{ ${value.substitutions.map(substitution => substitution + ":String").join(",")} } ->` : "" %> Literal
-<%- lowerCaseFirstLetter(key) %> <%- isPluralised ? "count" : "" %> <%- hasSubstitutions ? `{ ${value.substitutions.map(substitution => substitution).join(",")} }` : "" %> =
+<%- lowerCaseFirstLetter(key) %> <%- isPluralised ? "count" : "" %> <%- hasSubstitutions ? "s" : "" %> =
 <% if (!hasDefault && !hasSubstitutions && !isPluralised) { %>
   makeLiteral "<%- key %>"
 <% } else { %>
   makeLiteralWithOptions
     "<%- key %>"
     <%- hasDefault ? `(Just "${value.default}")` : "Nothing" %>
-    <%- hasSubstitutions ? `(Dict.fromList [${value.substitutions.map(substitution => `("${substitution}", ${substitution})`).join(",")}])` : "Dict.empty" %>
+    <%- hasSubstitutions ? `(Dict.fromList [${value.substitutions.map(substitution => `("${substitution}", s.${substitution})`).join(",")}])` : "Dict.empty" %>
     <%- isPluralised ? `(Just count)` : "Nothing" %>
 <% } %>
 <% }); %>
