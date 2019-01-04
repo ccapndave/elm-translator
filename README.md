@@ -64,4 +64,8 @@ This is an example specification file.
 
 In order to generate an Elm `Literals` module, you would use:
 
-`npx elm-translator -f myspec.json`
+`npx elm-translator generate -f literals.json`
+
+In order to generate an Elm `Literals` module in a specific package, you would use:
+
+`npm elm-translator generate -f literals.json --modulename MyApp.Literals`

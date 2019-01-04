@@ -15,7 +15,17 @@ function generate(spec, { modulename }) {
   const rendered = ejs.render(source, { spec, modulename: modulename || "Literals", lowerCaseFirstLetter });
 
   try {
-    const formatted = execSync(path.resolve(__dirname, "..", "node_modules", ".bin", "elm-format --stdin"), { input: rendered }).toString();
+    // Try a few locations to find elm-format; specifically node_modules relative to the script dir
+    const elmFormatLocation = [
+      path.resolve(__dirname, "..", "node_modules", ".bin", "elm-format"),
+      path.resolve(".", "node_modules", ".bin", "elm-format")
+    ].find(p => fs.existsSync(p));
+
+    if (!elmFormatLocation) {
+      throw new Error("Unable to find elm-format");
+    }
+
+    const formatted = execSync(`${elmFormatLocation} --stdin`), { input: rendered }).toString();
     return formatted;
   } catch (err) {
     console.error(err.toString());
