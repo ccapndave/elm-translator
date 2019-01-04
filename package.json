@@ -1,6 +1,6 @@
 {
   "name": "elm-translator",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Type safe translations for Elm.  The npm package contains a binary to autogenerate Elm code from a json specification.",
   "bin": {
     "elm-translator": "gen/elm-translator"
