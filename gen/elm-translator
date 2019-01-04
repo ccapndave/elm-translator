@@ -25,7 +25,7 @@ function generate(spec, { modulename }) {
       throw new Error("Unable to find elm-format");
     }
 
-    const formatted = execSync(`${elmFormatLocation} --stdin`), { input: rendered }).toString();
+    const formatted = execSync(`${elmFormatLocation} --stdin`, { input: rendered }).toString();
     return formatted;
   } catch (err) {
     console.error(err.toString());
