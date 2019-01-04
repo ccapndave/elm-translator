@@ -21,16 +21,18 @@ function generate(spec, { modulename }) {
       path.resolve(".", "node_modules", ".bin", "elm-format")
     ].find(p => fs.existsSync(p));
 
+    console.error(elmFormatLocation);
+
     if (!elmFormatLocation) {
       throw new Error("Unable to find elm-format");
     }
 
-    const formatted = execSync(`${elmFormatLocation} --stdin`, { input: rendered }).toString();
+    const formatted = execSync(`${elmFormatLocation} --elm-version=0.19 --stdin`, { input: rendered }).toString();
     return formatted;
   } catch (err) {
-    console.error(err.toString());
-    console.error("---");
     console.error(rendered);
+    console.error("---");
+    console.error(err.toString());
   }
 }
 
