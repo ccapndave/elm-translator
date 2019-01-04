@@ -3,7 +3,7 @@
   "version": "2.0.2",
   "description": "Type safe translations for Elm.  The npm package contains a binary to autogenerate Elm code from a json specification.",
   "bin": {
-    "elm-translator": "bin/elm-translator"
+    "elm-translator": "gen/elm-translator"
   },
   "main": "index.js",
   "repository": "git@github.com:ccapndave/elm-translator.git",
