@@ -18,7 +18,8 @@ function generate(spec, { modulename }) {
     // Try a few locations to find elm-format; specifically node_modules relative to the script dir
     const elmFormatLocation = [
       path.resolve(__dirname, "..", "node_modules", ".bin", "elm-format"),
-      path.resolve(".", "node_modules", ".bin", "elm-format")
+      path.resolve(".", "node_modules", ".bin", "elm-format"),
+      path.resolve("..", "..", "node_modules", ".bin", "elm-format")
     ].find(p => fs.existsSync(p));
 
     console.error(elmFormatLocation);
