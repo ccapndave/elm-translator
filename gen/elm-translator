@@ -22,8 +22,6 @@ function generate(spec, { modulename }) {
       path.resolve("..", "..", "node_modules", ".bin", "elm-format")
     ].find(p => fs.existsSync(p));
 
-    console.error(elmFormatLocation);
-
     if (!elmFormatLocation) {
       throw new Error("Unable to find elm-format");
     }
